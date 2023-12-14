@@ -2,6 +2,7 @@ import random
 import re
 import json
 from copy import deepcopy
+from scipy.interpolate import interp1d
 # film script file
 
 def extract_scene_headings(film_script_txtfile_path, mode=1):
@@ -336,7 +337,7 @@ def clear(script_path):
     for name in per:
         temp = re.findall(r'.*(?=\()', name)
         # print(name)
-        print(temp)
+        # print(temp)
         if temp:
             talker = temp[0].strip()
             # print(talker)
@@ -460,7 +461,7 @@ def emotion():
             cont_dict[j][name].append(feel)
             # print(cont_dict[j])
             # print(slug[k])
-        print(cont_dict[j])
+        # print(cont_dict[j])
     # print(cont_dict)
 
     final_list = {}
@@ -666,12 +667,28 @@ def words_count(path):
         tmp = re.sub('\d+$', '', tmp)
         final = id + ' ' + tmp.strip()
         slug_group['screen'] = final
-        slug_group['content'] = len(info[i]['content'])
+        slug_group['content'] = len(info[i]['content'])/50
         slug_group['id'] = i
-        slug_group['event'] = 10*rum[i] + len(info[i]['content'])
-        slug_group['emotion'] = len(info[i]['content']) - rum[i]*random.uniform(5,15)
+        slug_group['event'] = rum[i]/2 + len(info[i]['content'])/50
+        slug_group['emotion'] = len(info[i]['content'])/50 - rum[i]*random.uniform(0.5,1.5)/2
+        tick = len(info[i]['content'])//2000
+        slug_group['interval'] = tick+1
         words_info.append(slug_group)
-    return words_info
+    
+    words_info[0]['start'] = 0
+    deal_rhythm_info = [words_info[0]]
+    for i in range(1, len(words_info)):
+        words_info[i]['start'] = words_info[i-1]['start'] + words_info[i-1]['interval']
+
+        group_1 = words_info[i-1]  
+        group_2 = words_info[i]
+        content = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['content'], group_2['content'], 'content')  
+        event = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['event'], group_2['event'], 'event')  
+        emotion = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['emotion'], group_2['emotion'], 'emotion')
+        for j in range(1, len(content)-1):
+            deal_rhythm_info.append({ 'start':content[j]['start'],'content':content[j]['value'],'emotion':emotion[j]['value'],'event':event[j]['value'],'screen':''})
+        deal_rhythm_info.append({ 'start':content[-1]['start'],'content':content[-1]['value'],'emotion':emotion[-1]['value'],'event':event[-1]['value'],'screen':words_info[i]['screen']})
+    return deal_rhythm_info
 def information_statistic(texts):
     # 统计一段文字中的事件数量，并且和情绪作计算计算出上下限
     rum = []
@@ -680,6 +697,30 @@ def information_statistic(texts):
         f = content.split('\n\n')
         rum.append(len(f))
     return rum
+
+#差值计算
+def differential_expansion(i,j, group_1, group_2, value):
+    # 给定的原始数据
+    # print(i,j, group_1, group_2, value)
+    data_content = [
+        {'start':int(i),'value':group_1},
+        {'start':int(j),'value':group_2},
+    ]
+    # 提取 start 和 value 列表
+    start = [d['start'] for d in data_content]
+    value = [d['value'] for d in data_content]
+    # value.sort()
+    # 生成新的 start 列表
+    new_start = list(range(start[0], start[-1]+1))
+    # print(start, value)
+    # 使用线性插值对 value 进行扩充
+    f = interp1d(start, value, kind='linear')
+    new_value = f(new_start)
+
+    # 打印扩充后的数据列表
+    result_data = [{'start': s, 'value': v} for s, v in zip(new_start, new_value)]
+    return result_data
+
 def get_action_sentence(path):
     with open(path, "r", encoding='utf-8') as f:
         film_string = f.readlines()
@@ -766,8 +807,8 @@ def event_text(path):
 def show_event_data():
     with open('../data/gpt_event_reuslt.json', 'r') as f:
         dataFina = json.load(f)
-    for i in dataFina:
-        print(len(i),i)
+    # for i in dataFina:
+        # print(len(i),i)
 
 if __name__ == '__main__':
     path = '../Joker.txt'
@@ -786,5 +827,5 @@ if __name__ == '__main__':
     # show_event_data()
     # _name_ =3
     # slug_emotion()
-    words_count(path)
+    res = words_count(path)
     # print(res)

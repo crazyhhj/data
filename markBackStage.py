@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 import Textdeal.exActor
 from Textdeal.scriptDeal import person_dict
-from API.bert_ner import get_des_information
+# from API.bert_ner import get_des_information
 from Textdeal.exActor import *
 from Textdeal.exActor import screenplay, divid_launch, format_information, dialogue, clear, performance_distribution, words_count, get_action_sentence, PERSON,format_person
 
@@ -131,7 +131,6 @@ def get_location():
 @app.route('/api/post/scheduling', methods=['GET'])
 def get_aggregate_scheduling():
     information = words_count('Joker.txt')
-    print(information)
     return information
 
 #雷达图 使用的 演员 for 章节
@@ -186,11 +185,11 @@ def getText():
         return jsonify(personList)
         # return 'defeat'
 
-@app.route('/api/get/slug_content', methods=['POST'])
-def post_content():
-    content: str = request.get_data(as_text=True)
-    person_list = get_des_information(content)
-    return jsonify(person_list)
+# @app.route('/api/get/slug_content', methods=['POST'])
+# def post_content():
+#     content: str = request.get_data(as_text=True)
+#     person_list = get_des_information(content)
+#     return jsonify(person_list)
 
 
 if __name__ == '__main__':
