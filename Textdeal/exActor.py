@@ -671,23 +671,49 @@ def words_count(path):
         slug_group['id'] = i
         slug_group['event'] = rum[i]/2 + len(info[i]['content'])/50
         slug_group['emotion'] = len(info[i]['content'])/50 - rum[i]*random.uniform(0.5,1.5)/2
-        tick = len(info[i]['content'])//2000
+        tick = len(info[i]['content'])//500
         slug_group['interval'] = tick+1
         words_info.append(slug_group)
     
     words_info[0]['start'] = 0
-    deal_rhythm_info = [words_info[0]]
     for i in range(1, len(words_info)):
-        words_info[i]['start'] = words_info[i-1]['start'] + words_info[i-1]['interval']
+        interval_1 = words_info[i-1]['interval']
+        interval_2 = words_info[i]['interval']
+        mean = (interval_1 + interval_2)//2  + 1
 
-        group_1 = words_info[i-1]  
-        group_2 = words_info[i]
-        content = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['content'], group_2['content'], 'content')  
-        event = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['event'], group_2['event'], 'event')  
-        emotion = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['emotion'], group_2['emotion'], 'emotion')
-        for j in range(1, len(content)-1):
-            deal_rhythm_info.append({ 'start':content[j]['start'],'content':content[j]['value'],'emotion':emotion[j]['value'],'event':event[j]['value'],'screen':''})
-        deal_rhythm_info.append({ 'start':content[-1]['start'],'content':content[-1]['value'],'emotion':emotion[-1]['value'],'event':event[-1]['value'],'screen':words_info[i]['screen']})
+        words_info[i]['start'] = words_info[i-1]['start'] + mean
+        words_info[i]['interval'] = mean
+
+
+    deal_rhythm_info = [words_info[0]]
+
+    for i in range(2, len(words_info), 2):
+
+        start_1 = words_info[i-2]['start']
+        start_2 = words_info[i-1]['start']
+        start_3 = words_info[i]['start']
+
+        group_1 = words_info[i-2]  
+        group_2 = words_info[i-1]
+        group_3 = words_info[i]
+        content = differential_expansion_quadratic(start_1, start_2, start_3, group_1['content'], group_2['content'], group_3['content'])  
+        event = differential_expansion_quadratic(start_1, start_2, start_3, group_1['event'], group_2['event'], group_3['event'])  
+        emotion = differential_expansion_quadratic(start_1, start_2, start_3, group_1['emotion'], group_2['emotion'], group_3['emotion'])
+        for j in range(1, len(content)):
+            if  content[j]['start'] in [start_2, start_3]:
+                if content[j]['start'] == start_2:
+                    deal_rhythm_info.append({'start':content[j]['start'],'content':content[j]['value'],'emotion':emotion[j]['value'],'event':event[j]['value'],'screen':words_info[i-1]['screen'], 'id':words_info[i-1]['id']})
+                if content[j]['start'] == start_3:
+                    deal_rhythm_info.append({'start':content[j]['start'],'content':content[j]['value'],'emotion':emotion[j]['value'],'event':event[j]['value'],'screen':words_info[i]['screen'], 'id':words_info[i]['id']})
+
+            deal_rhythm_info.append({'start':content[j]['start'],'content':content[j]['value'],'emotion':emotion[j]['value'],'event':event[j]['value'],'screen':''})
+        
+        # content = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['content'], group_2['content'], 'content')  
+        # event = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['event'], group_2['event'], 'event')  
+        # emotion = differential_expansion(words_info[i-1]['start'], words_info[i]['start'], group_1['emotion'], group_2['emotion'], 'emotion')
+        # for j in range(1, len(content)-1):
+        #     deal_rhythm_info.append({ 'start':content[j]['start'],'content':content[j]['value'],'emotion':emotion[j]['value'],'event':event[j]['value'],'screen':''})
+        # deal_rhythm_info.append({ 'start':content[-1]['start'],'content':content[-1]['value'],'emotion':emotion[-1]['value'],'event':event[-1]['value'],'screen':words_info[i]['screen']})
     return deal_rhythm_info
 def information_statistic(texts):
     # 统计一段文字中的事件数量，并且和情绪作计算计算出上下限
@@ -720,6 +746,31 @@ def differential_expansion(i,j, group_1, group_2, value):
     # 打印扩充后的数据列表
     result_data = [{'start': s, 'value': v} for s, v in zip(new_start, new_value)]
     return result_data
+
+#差值计算-二次曲线
+def differential_expansion_quadratic(start_1, start_2, start_3, group_1, group_2, group_3 ):
+    # 给定的原始数据
+    # print(i,j, group_1, group_2, value)
+    data_content = [
+        {'start':int(start_1),'value':group_1},
+        {'start':int(start_2),'value':group_2},
+        {'start':int(start_3),'value':group_3},
+    ]
+    # 提取 start 和 value 列表
+    start = [d['start'] for d in data_content]
+    value = [d['value'] for d in data_content]
+    # value.sort()
+    # 生成新的 start 列表
+    new_start = list(range(start[0], start[-1]+1))
+    # print(start, value)
+    # 使用线性插值对 value 进行扩充
+    f = interp1d(start, value, kind='quadratic')
+    new_value = f(new_start)
+
+    # 打印扩充后的数据列表
+    result_data = [{'start': s, 'value': v} for s, v in zip(new_start, new_value)]
+    return result_data
+
 
 def get_action_sentence(path):
     with open(path, "r", encoding='utf-8') as f:
@@ -828,4 +879,4 @@ if __name__ == '__main__':
     # _name_ =3
     # slug_emotion()
     res = words_count(path)
-    # print(res)
+    print(res)
