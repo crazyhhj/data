@@ -715,6 +715,85 @@ def words_count(path):
         #     deal_rhythm_info.append({ 'start':content[j]['start'],'content':content[j]['value'],'emotion':emotion[j]['value'],'event':event[j]['value'],'screen':''})
         # deal_rhythm_info.append({ 'start':content[-1]['start'],'content':content[-1]['value'],'emotion':emotion[-1]['value'],'event':event[-1]['value'],'screen':words_info[i]['screen']})
     return deal_rhythm_info
+
+#每一章的谱线
+def get_trend_data(path):
+    words_info: list = []
+    info = dialogue(path)
+
+    all_result:list = []
+    text_list: list = []
+    for i in info:
+        tmp = i['content'].split("\n\n")
+        text_list.append(tmp)
+    for slug_index in range(len(text_list)):
+        chapter_text = list(map(lambda x: len(x)+10, text_list[slug_index]))
+        rum: list = []
+        for text in text_list[slug_index]:
+            rum.append(len(text.split(".")))
+        words_info: list = []
+        count = 1
+        for i in range(len(text_list[slug_index])):
+            id = str(i)
+            count = count + 1
+            slug_group: dict = {}
+            tmp = re.sub('^\d+', '', info[slug_index]['screen'])
+            tmp = re.sub('\d+$', '', tmp)
+            # final = str(slug_index) + ' ' + tmp.strip()
+            final = text_list[slug_index][i]
+            slug_group['screen'] = final
+            slug_group['content'] = chapter_text[i] / 50
+            slug_group['id'] = i
+            slug_group['event'] = rum[i]  + chapter_text[i] / 50
+            slug_group['emotion'] = chapter_text[i] / 50 - rum[i] * random.uniform(0.5, 1.5)
+            tick = chapter_text[i] // 50
+            # print(chapter_text[i],tick)
+            slug_group['interval'] = tick + 1
+            words_info.append(slug_group)
+
+        words_info[0]['start'] = 0
+        # print(words_info[0])
+        for i in range(1, len(words_info)):
+            interval_1 = words_info[i - 1]['interval']
+            interval_2 = words_info[i]['interval']
+            mean = (interval_1 + interval_2) // 2 + 1
+
+            words_info[i]['start'] = words_info[i - 1]['start'] + mean
+            words_info[i]['interval'] = mean
+
+        deal_rhythm_info = [words_info[0]]
+        for i in range(2, len(words_info), 2):
+            start_1 = words_info[i - 2]['start']
+            start_2 = words_info[i - 1]['start']
+            start_3 = words_info[i]['start']
+
+            group_1 = words_info[i - 2]
+            group_2 = words_info[i - 1]
+            group_3 = words_info[i]
+            content = differential_expansion_quadratic(start_1, start_2, start_3, group_1['content'],
+                                                       group_2['content'], group_3['content'])
+            event = differential_expansion_quadratic(start_1, start_2, start_3, group_1['event'], group_2['event'],
+                                                     group_3['event'])
+            emotion = differential_expansion_quadratic(start_1, start_2, start_3, group_1['emotion'],
+                                                       group_2['emotion'], group_3['emotion'])
+            for j in range(1, len(content)):
+                if content[j]['start'] in [start_2, start_3]:
+                    if content[j]['start'] == start_2:
+                        deal_rhythm_info.append({'start': content[j]['start'], 'content': content[j]['value'],
+                                                 'emotion': emotion[j]['value'], 'event': event[j]['value'],
+                                                 'screen': text_list[slug_index][i-1], 'id': words_info[i - 1]['id'], 'slugName': tmp})
+                    if content[j]['start'] == start_3:
+                        deal_rhythm_info.append({'start': content[j]['start'], 'content': content[j]['value'],
+                                                 'emotion': emotion[j]['value'], 'event': event[j]['value'],
+                                                 'screen': text_list[slug_index][i-1], 'id': words_info[i]['id'],'slugName': tmp})
+
+                deal_rhythm_info.append(
+                    {'start': content[j]['start'], 'content': content[j]['value'], 'emotion': emotion[j]['value'],
+                     'event': event[j]['value'], 'screen': '', 'id':''})
+        all_result.append(deal_rhythm_info)
+    return all_result
+
+
 def information_statistic(texts):
     # 统计一段文字中的事件数量，并且和情绪作计算计算出上下限
     rum = []
@@ -861,22 +940,12 @@ def show_event_data():
     # for i in dataFina:
         # print(len(i),i)
 
+
+
 if __name__ == '__main__':
     path = '../Joker.txt'
-    # a = get_action_sentence(path)
-    # c=0
-    # for i in a:
+    res = get_trend_data(path)
+    #
+    # for i in res:
     #     for j in i:
-    #         c=c+1
-    # print(c)
-    # place()
-    # print(format_person(PERSON('../Joker.txt')))
-    # a = transitions_screen('../Joker.txt')
-    # print(a)
-
-    # event_text(path)
-    # show_event_data()
-    # _name_ =3
-    # slug_emotion()
-    res = words_count(path)
-    print(res)
+    #         print(j)
