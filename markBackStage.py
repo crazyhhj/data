@@ -9,7 +9,7 @@ import Textdeal.exActor
 from Textdeal.scriptDeal import person_dict
 # from API.bert_ner import get_des_information
 from Textdeal.exActor import *
-from Textdeal.exActor import screenplay, divid_launch, format_information, dialogue, clear, performance_distribution, words_count, get_action_sentence, PERSON,format_person, get_trend_data
+from Textdeal.exActor import screenplay, divid_launch, format_information, dialogue, clear, performance_distribution, words_count, get_action_sentence, PERSON,format_person, get_trend_data,emotionAll
 
 # configuration
 DEBUG = True
@@ -104,9 +104,8 @@ def distribution():
 
 @app.route('/api/post/emotion', methods=['GET'])
 def emo():
-    with open('data/emotion.json', 'r') as f:
-        information = json.load(f)
-    return jsonify(information)
+    res = emotionAll('data/emotion.json')
+    return jsonify(res)
     # return jsonify(actor_dis)
 
 @app.route('/api/post/actoremo', methods=['GET'])

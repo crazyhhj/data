@@ -744,8 +744,10 @@ def get_trend_data(path):
             slug_group['screen'] = final
             slug_group['content'] = chapter_text[i] / 50
             slug_group['id'] = i
-            slug_group['event'] = rum[i]  + chapter_text[i] / 50
-            slug_group['emotion'] = chapter_text[i] / 50 - rum[i] * random.uniform(0.5, 1.5)
+            # slug_group['event'] = rum[i]  + chapter_text[i] / 50
+            slug_group['event'] = chapter_text[i] / 50 + random.uniform(.3,1.3) * (rum[i]%(chapter_text[i] / 50))
+            # slug_group['emotion'] = chapter_text[i] / 50 - rum[i] * random.uniform(0.5, 1.5)
+            slug_group['emotion'] = chapter_text[i] / 50 - random.uniform(0,.7) * (rum[i]%(chapter_text[i]*random.uniform(0,1) / 50))
             tick = chapter_text[i] // 50
             # print(chapter_text[i],tick)
             slug_group['interval'] = tick + 1
@@ -940,12 +942,23 @@ def show_event_data():
     # for i in dataFina:
         # print(len(i),i)
 
-
-
+def emotionAll(path):
+    with open(path, 'r') as f:
+        emoAll = json.load(f)
+    emotion_chapter:list = []
+    for emo in emoAll:
+        emo_in_chap:list = []
+        for i in emo:
+            tmp: dict = {'name': i[0], 'emo': i[2]}
+            emo_in_chap.append(tmp)
+        emo_in_chap = emo_in_chap[1:]
+        emotion_chapter.append(emo_in_chap)
+    return emotion_chapter
 if __name__ == '__main__':
     path = '../Joker.txt'
-    res = get_trend_data(path)
+    # res = get_trend_data(path)
     #
     # for i in res:
     #     for j in i:
     #         print(j)
+    emotionAll()
