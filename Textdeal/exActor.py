@@ -949,11 +949,46 @@ def emotionAll(path):
     for emo in emoAll:
         emo_in_chap:list = []
         for i in emo:
-            tmp: dict = {'name': i[0], 'emo': i[2]}
+            tmp: dict = {'name': i[0], 'emotion': i[2]}
             emo_in_chap.append(tmp)
         emo_in_chap = emo_in_chap[1:]
         emotion_chapter.append(emo_in_chap)
-    return emotion_chapter
+
+    res: list = []
+
+    for data in emotion_chapter:
+        result = set()
+        for item in data:
+            name = item['name']
+            emo = item['emotion']
+            if name not in result:
+               result.add(name)
+        emo_data_chapter:dict = {}
+        for person in result:
+            emo_data_chapter[person] = []
+
+        #emo_data_chapter_list:list = []
+        for item in data:
+            name = item['name']
+            emo = item['emotion']
+            for key, value in emo_data_chapter.items():
+                if key == name:
+                    emo_data_chapter[key].append(emo)
+                else:
+                    emo_data_chapter[key].append('')
+        res.append(emo_data_chapter)
+
+    res_res = []
+    for i in res:
+        chapter = []
+        for k,v in i.items():
+            tmp = {'name':k,"emotion":v}
+            chapter.append(tmp)
+        res_res.append(chapter)
+
+
+    return res_res
+
 if __name__ == '__main__':
     path = '../Joker.txt'
     # res = get_trend_data(path)
@@ -961,4 +996,5 @@ if __name__ == '__main__':
     # for i in res:
     #     for j in i:
     #         print(j)
-    emotionAll()
+    path_e = '../data/emotion.json'
+    emotionAll(path_e)
